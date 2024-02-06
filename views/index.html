@@ -8,22 +8,104 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Counter</title>
     <script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
+    <link rel="stylesheet" href="/css/index.css">
 </head>
 <body>
-<div id="count">
-    {{ template "count" . }}
-</div>
-<button hx-target="#count" hx-post="/count">
-    Count
-</button>
+{{template "form" .Form }}
+<hr/>
+{{template "display" .Data }}
+<script>
+    document.addEventListener("DOMContentLoaded", (event) => {
+        document.body.addEventListener('htmx:beforeSwap', function (evt) {
+            if (evt.detail.xhr.status === 422) {
+                evt.detail.shouldSwap = true;
+                evt.detail.isError = false
+            }
+        });
+    });
+</script>
 </body>
 </html>
+{{ end }}
 
+{{ block "form" . }}
+<form hx-swap="outerHTML" hx-post="/contacts">
+    name: <input
+        {{if .Values.name}} value="{{.Values.name}}" {{end}}
+        type="text" name="name"/>
+    email: <input
+        {{if .Values.email}} value="{{.Values.email}}" {{end}}
+        type="text" name="email"/>
+    {{if .Errors.email}}
+    <div style="color: red">{{.Errors.email}}</div>
+    {{end}}
+    <button type="submit">Create contact</button>
+</form>
 {{ end }}
 
 
-{{ block "count" . }}
+{{ block "display" . }}
+<div id="contacts" style="display: flex; flex-direction: column;">
+    {{ range .Contacts }}
+    {{ template "contact" . }}
+    {{end}}
+</div>
+{{ end }}
 
-Count {{ .Count }}
+{{ block "contact" . }}
+<div class="contact" id="contact-{{ .Id }}" style="display: flex">
+    <div hx-target="#contact-{{ .Id }}"
+         hx-swap="outerHTML swap:1000ms"
+         hx-delete="/contacts/{{ .Id }}"
+         hx-indicator="#ci-{{ .Id }}"
+         style="width: 1rem; cursor: pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path fill="none" d="M0 0h24v24H0z"/>
+            <path d="M4 2h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zM3 6h18v16a1 1 0 01-1 1H4a1 1 0 01-1-1V6zm3 3v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0z"/>
+        </svg>
+    </div>
 
+    Name: <span>{{ .Name }}</span>
+    Email: <span>{{ .Email }}</span>
+
+    <div id="ci-{{ .Id }}" class="htmx-indicator">
+        <img src="/images/bars.svg" alt="loading" style="width: 1rem">
+    </div>
+
+</div>
+{{ end }}
+
+{{ block "oob-contact" . }}
+<div id="contacts" hx-swap-oob="afterbegin">
+    {{ template "contact" .}}
+</div>
+{{ end }}
+
+{{ block "question-description-editor" .}}
+<h1>Classic editor</h1>
+<form action="" method="post">
+            <textarea name="content" id="editor">
+            &lt;p&gt;This is some sample content.&lt;/p&gt;
+        </textarea
+        >
+    <p><input id="submit" type="submit" value="Submit" /></p>
+</form>
+<script>
+    let editor;
+    ClassicEditor.create(document.querySelector("#editor"))
+        .then((newEditor) => {
+            editor = newEditor;
+        })
+        .catch((error) => {
+            console.error(error);
+        });
+    document
+        .querySelector("#submit")
+        .addEventListener("click", (event) => {
+            event.preventDefault();
+            const editorData = editor.getData();
+            console.log(editorData);
+        });
+</script>
 {{ end }}
